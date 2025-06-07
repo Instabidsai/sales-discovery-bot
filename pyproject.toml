@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "sales-discovery-bot"
+version = "0.1.0"
+description = "AI-powered sales discovery agent for Insta Agents"
+authors = ["Insta Agents"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --cov=agent --cov=api --cov=jobs"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[tool.coverage.run]
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 88
