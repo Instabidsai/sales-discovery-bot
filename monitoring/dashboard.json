@@ -1,0 +1,55 @@
+{
+  "dashboard": {
+    "title": "Sales Discovery Bot Metrics",
+    "panels": [
+      {
+        "title": "Conversations Started",
+        "targets": [
+          {
+            "expr": "rate(conversations_started_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Conversations Completed",
+        "targets": [
+          {
+            "expr": "rate(conversations_completed_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Demos Booked",
+        "targets": [
+          {
+            "expr": "rate(demos_booked_total[5m])"
+          }
+        ]
+      },
+      {
+        "title": "Response Time (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(response_time_seconds_bucket[5m]))"
+          }
+        ]
+      },
+      {
+        "title": "Active Pods",
+        "targets": [
+          {
+            "expr": "kube_deployment_status_replicas{deployment=\"sales-discovery-bot\"}"
+          }
+        ]
+      },
+      {
+        "title": "Partnership Tier Distribution",
+        "targets": [
+          {
+            "expr": "sum by (tier) (partnership_tier_total)"
+          }
+        ]
+      }
+    ]
+  }
+}

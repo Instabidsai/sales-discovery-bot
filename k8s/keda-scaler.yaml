@@ -1,0 +1,52 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sales-discovery-bot-scaler
+  namespace: agents
+spec:
+  scaleTargetRef:
+    name: sales-discovery-bot
+  minReplicaCount: 1  # Always have at least 1 ready
+  maxReplicaCount: 20  # Cap at 20 pods
+  pollingInterval: 30
+  cooldownPeriod: 300  # 5 minutes
+  triggers:
+  # Scale based on HTTP request rate
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus:9090
+      metricName: http_requests_per_second
+      query: |
+        sum(rate(http_requests_total{app="sales-discovery-bot"}[1m]))
+      threshold: "50"  # 50 RPS per replica
+  # Also scale based on response time
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus:9090
+      metricName: response_time_p95
+      query: |
+        histogram_quantile(0.95, 
+          sum(rate(http_request_duration_seconds_bucket{app="sales-discovery-bot"}[5m])) 
+          by (le)
+        )
+      threshold: "2"  # Scale up if p95 > 2 seconds
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 100  # Double pods
+            periodSeconds: 60
+          - type: Pods
+            value: 4    # Or add 4 pods
+            periodSeconds: 60
+          selectPolicy: Max  # Use larger of the two
+        scaleDown:
+          stabilizationWindowSeconds: 300  # 5 minutes
+          policies:
+          - type: Percent
+            value: 10   # Remove 10% of pods
+            periodSeconds: 60
+          selectPolicy: Min

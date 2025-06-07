@@ -1,0 +1,60 @@
+groups:
+  - name: sales-discovery-bot
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{app="sales-discovery-bot",status=~"5.."}[5m]) 
+          / 
+          rate(http_requests_total{app="sales-discovery-bot"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: sales
+        annotations:
+          summary: "High error rate for Sales Discovery Bot"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+      
+      # Slow response time
+      - alert: SlowResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(response_time_seconds_bucket{app="sales-discovery-bot"}[5m])
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+          team: sales
+        annotations:
+          summary: "Slow response times for Sales Discovery Bot"
+          description: "P95 response time is {{ $value }}s"
+      
+      # Low conversion rate
+      - alert: LowConversionRate
+        expr: |
+          rate(conversations_completed_total[1h]) 
+          / 
+          rate(conversations_started_total[1h]) < 0.3
+        for: 1h
+        labels:
+          severity: info
+          team: sales
+        annotations:
+          summary: "Low conversation completion rate"
+          description: "Only {{ $value | humanizePercentage }} of conversations reach proposal stage"
+      
+      # Pod restart
+      - alert: PodRestarting
+        expr: |
+          rate(kube_pod_container_status_restarts_total{
+            namespace="agents",
+            pod=~"sales-discovery-bot-.*"
+          }[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Sales Discovery Bot pod restarting"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times"

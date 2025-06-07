@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sales-discovery-bot-config
+  namespace: agents
+data:
+  # Non-sensitive configuration
+  LLM_MODEL: "gpt-4o"
+  LLM_TEMPERATURE: "0.7"
+  MAX_TOKENS: "1000"
+  DAILY_TOKEN_LIMIT: "1000000"
+  DAILY_COST_LIMIT: "50.0"
+  
+  # Business configuration
+  CALENDLY_URL: "https://calendly.com/justin-erezcapital/30min"
+  STARTER_PRICE: "1250"
+  GROWTH_PRICE: "2500"
+  ENTERPRISE_PRICE: "5000"
+  
+  # Service URLs (internal)
+  REDIS_URL: "redis://redis-service:6379"
+  
+  # Observability
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_SERVICE_NAME: "sales-discovery-bot"

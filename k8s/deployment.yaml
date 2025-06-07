@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-discovery-bot
+  namespace: agents
+  labels:
+    app: sales-discovery-bot
+    component: api
+  annotations:
+    # Cost tracking
+    cost.tracking/tenant: "insta-agents"
+    cost.tracking/cost-center: "sales"
+    
+    # Monitoring
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+spec:
+  replicas: 1  # KEDA will manage this
+  selector:
+    matchLabels:
+      app: sales-discovery-bot
+      component: api
+  template:
+    metadata:
+      labels:
+        app: sales-discovery-bot
+        component: api
+      annotations:
+        # Vault agent sidecar injection
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "agent-role"
+        vault.hashicorp.com/agent-inject-secret-openai: "kv/data/agents/insta-agents/sales-discovery-bot/openai"
+        vault.hashicorp.com/agent-inject-template-openai: |
+          {{- with secret "kv/data/agents/insta-agents/sales-discovery-bot/openai" -}}
+          export OPENAI_API_KEY="{{ .Data.data.api_key }}"
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-postgres: "kv/data/agents/insta-agents/sales-discovery-bot/postgres"
+        vault.hashicorp.com/agent-inject-template-postgres: |
+          {{- with secret "kv/data/agents/insta-agents/sales-discovery-bot/postgres" -}}
+          export POSTGRES_DSN="{{ .Data.data.dsn }}"
+          {{- end }}
+    spec:
+      serviceAccountName: agent-sa
+      containers:
+      - name: api
+        image: ghcr.io/instabidsai/sales-discovery-bot:latest
+        imagePullPolicy: Always
+        command: ["/bin/bash", "-c"]
+        args: 
+          - |
+            source /vault/secrets/openai
+            source /vault/secrets/postgres
+            python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        env:
+        - name: AGENT_NAME
+          value: "sales-discovery-bot"
+        - name: TENANT_ID
+          value: "insta-agents"
+        envFrom:
+        - configMapRef:
+            name: sales-discovery-bot-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      imagePullSecrets:
+      - name: ghcr-secret
