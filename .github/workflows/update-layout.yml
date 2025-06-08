@@ -1,0 +1,28 @@
+name: Update repo layout
+
+on:
+  push:
+    branches: [main]           # run when code merges to main
+  workflow_dispatch:           # lets you run it manually from the GitHub UI
+
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Generate a 3-level directory tree, ignore folders we don't care about
+      - name: Generate REPO_LAYOUT.md
+        run: |
+          tree -L 3 -I '__pycache__|node_modules|.git|.venv|dist|*.pyc|.pytest_cache' > REPO_LAYOUT.md
+          echo "" >> REPO_LAYOUT.md
+          echo "Generated on: $(date)" >> REPO_LAYOUT.md
+
+      # Commit the file if it changed
+      - name: Commit updated layout
+        run: |
+          git config user.name  "layout-bot"
+          git config user.email "layout-bot@users.noreply.github.com"
+          git add REPO_LAYOUT.md
+          git diff-index --quiet HEAD || git commit -m "chore: update repo layout [skip ci]"
+          git push
