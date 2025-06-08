@@ -1,4 +1,4 @@
-# Multi-stage build for production
+# Build stage
 FROM python:3.11-slim AS builder
 
 RUN apt-get update && apt-get install -y \
@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Production stage
+# Production stage  
 FROM python:3.11-slim
 
 # GitHub Container Registry label - REQUIRED for package association
@@ -28,9 +28,12 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application
+# Copy application - copy individual directories
 WORKDIR /app
-COPY --chown=agent:agent . .
+COPY --chown=agent:agent agent/ ./agent/
+COPY --chown=agent:agent jobs/ ./jobs/
+COPY --chown=agent:agent api/ ./api/
+COPY --chown=agent:agent tests/ ./tests/
 
 # Environment
 ENV PYTHONUNBUFFERED=1 \
