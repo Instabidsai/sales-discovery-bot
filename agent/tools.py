@@ -3,13 +3,13 @@
 import re
 from typing import List, Dict, Any, Optional
 from langchain_core.messages import BaseMessage
-from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 
 from .state import BusinessInfo, MVPProposal
 
 
 async def extract_business_info(
-    llm: ChatOpenAI,
+    llm: ChatAnthropic,
     messages: List[BaseMessage]
 ) -> BusinessInfo:
     """Extract business information from conversation history."""
@@ -50,7 +50,7 @@ JSON:
 
 
 async def generate_mvp_proposal(
-    llm: ChatOpenAI,
+    llm: ChatAnthropic,
     messages: List[BaseMessage],
     business_info: Dict[str, Any],
     identified_task: str
@@ -70,6 +70,7 @@ Create an MVP AI agent proposal. Return a JSON object with:
 - time_saved: realistic time saved per week
 - integrations: list of tools it integrates with
 - success_metric: measurable outcome
+- delivery_time: realistic delivery timeframe
 
 Make it specific and achievable. Focus on quick wins.
 
@@ -95,7 +96,8 @@ JSON:
             description="Automates your most time-consuming task with AI-powered intelligence.",
             time_saved="10+ hours/week",
             integrations=["Email", "Spreadsheets"],
-            success_metric="90% reduction in manual processing time"
+            success_metric="90% reduction in manual processing time",
+            delivery_time="2 weeks"
         )
 
 
