@@ -4,9 +4,9 @@ import asyncio
 import json
 import logging
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
-from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
@@ -26,12 +26,12 @@ class SalesDiscoveryAgent:
     def __init__(self, config=None):
         self.config = config or get_config()
         
-        # Initialize LLM
-        self.llm = ChatOpenAI(
+        # Initialize LLM - using Anthropic
+        self.llm = ChatAnthropic(
             model=self.config.llm_model,
             temperature=self.config.llm_temperature,
             max_tokens=self.config.max_tokens,
-            api_key=self.config.openai_api_key
+            anthropic_api_key=self.config.anthropic_api_key
         )
         
         # Initialize checkpointer for conversation persistence
@@ -245,29 +245,32 @@ Ready to see this in action?
                 "stage": "start",
                 "business_info": {},
                 "questions_asked": 0,
-                "started_at": datetime.utcnow(),
+                "started_at": datetime.now(timezone.utc),
                 "calendly_shown": False
             }
-            current_state = await self.graph.ainvoke(initial_state, config)
+            await self.graph.ainvoke(initial_state, config)
         else:
             # Add user message and continue
             user_message = HumanMessage(content=message)
-            result = await self.graph.ainvoke(
+            await self.graph.ainvoke(
                 {"messages": [user_message]},
                 config
             )
-            current_state = self.graph.get_state(config)
+        
+        # Get the updated state
+        updated_state = self.graph.get_state(config)
+        state_values = updated_state.values if updated_state.values else {}
         
         # Get the last AI message as response
         last_ai_message = None
-        for msg in reversed(current_state.values.get("messages", [])):
+        for msg in reversed(state_values.get("messages", [])):
             if isinstance(msg, AIMessage):
                 last_ai_message = msg.content
                 break
         
         return {
             "response": last_ai_message,
-            "stage": current_state.values.get("stage"),
+            "stage": state_values.get("stage"),
             "conversation_id": conversation_id,
-            "calendly_shown": current_state.values.get("calendly_shown", False)
+            "calendly_shown": state_values.get("calendly_shown", False)
         }
