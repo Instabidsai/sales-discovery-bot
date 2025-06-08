@@ -1,0 +1,36 @@
+name: Fixed Docker Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build and push Docker image
+      run: |
+        echo "Building Docker image..."
+        docker build -t ghcr.io/instabidsai/sales-discovery-bot:latest .
+        docker build -t ghcr.io/instabidsai/sales-discovery-bot:${{ github.sha }} .
+        
+        echo "Pushing Docker image..."
+        docker push ghcr.io/instabidsai/sales-discovery-bot:latest
+        docker push ghcr.io/instabidsai/sales-discovery-bot:${{ github.sha }}
+        
+        echo "Docker image successfully pushed to ghcr.io/instabidsai/sales-discovery-bot:latest"
