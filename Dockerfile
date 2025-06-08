@@ -13,6 +13,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Production stage
 FROM python:3.11-slim
 
+# GitHub Container Registry label - REQUIRED for package association
+LABEL org.opencontainers.image.source="https://github.com/Instabidsai/sales-discovery-bot"
+
 # Security: non-root user
 RUN groupadd -r agent && useradd -r -g agent agent
 
