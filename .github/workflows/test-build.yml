@@ -1,0 +1,42 @@
+name: Test Docker Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: List files
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Files:"
+        ls -la
+        echo "Python files:"
+        find . -name "*.py" | head -20
+        
+    - name: Check Dockerfile
+      run: |
+        echo "Dockerfile content:"
+        cat Dockerfile
+        
+    - name: Check requirements.txt
+      run: |
+        echo "Requirements:"
+        cat requirements.txt
+        
+    - name: Try simple Docker build
+      run: |
+        docker build -t test-build:latest .
+        echo "Build completed successfully!"
+        
+    - name: Test image
+      run: |
+        docker run --rm test-build:latest python -c "print('Container works!')"
